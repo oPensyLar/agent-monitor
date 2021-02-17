@@ -4,7 +4,6 @@
 int JsonParser::ParserRequest(kn::buffer<1024> arg0)
 {
 	std::string data = reinterpret_cast<char*>(arg0.data());
-
 	json j;
 	auto o = j.parse(data);		
 	std::string strKey;
@@ -13,16 +12,23 @@ int JsonParser::ParserRequest(kn::buffer<1024> arg0)
 	{
 		if (key.compare("req") == 0x0)
 		{
+			passAuth = value["auth"]["pass"];
 			reportCpu = value["cpu"];
 			reportMem = value["mem"];
 			reportDisk = value["disk"];
-			reportProcs = value["procs"];
-		}
-			
+			reportProcs = value["procs"];			
+		}			
 	}
 
 	return 0x0;
 }
+
+
+void JsonParser::BuildAuthFail(bool flag)
+{
+	pObject["auth"]["state"] = flag;
+}
+
 
 int JsonParser::Example()
 {
@@ -59,6 +65,12 @@ int JsonParser::Example()
 }
 
 
+void JsonParser::SetAuthPass(std::string arg0)
+{
+	localAuthPass = arg0;
+}
+
+
 void JsonParser::BuildResponse(MEMORYSTATUSEX arg0)
 {
 	
@@ -74,6 +86,44 @@ void JsonParser::BuildResponse(MEMORYSTATUSEX arg0)
 		});	
 }
 
+
+int JsonParser::LoadConfig()
+{
+	std::filebuf fb;
+
+	if (fb.open("config.json", std::ios::in))
+	{
+		std::istream iFile(&fb);
+		json j;
+		auto jCfg = j.parse(iFile);
+		passAuth = jCfg["auth"]["password"];
+
+		return 0x0;
+	}
+
+	else
+		return 0x1;
+}
+
+
+std::string JsonParser::GetPwdAtuh()
+{
+	return passAuth;
+}
+
+
+void JsonParser::BuildResponse(std::multimap<std::pair<std::string, DWORD>, DWORD> arg0)
+{
+	for (auto a : arg0)
+	{
+		
+		pObject["procs"].push_back({ 
+			{"nam", a.first.first}, 
+			{"cpu_usage", -1}, 
+			{"mem_usage", a.second},
+			{"pid", a.first.second} });
+	}
+}
 
 
 int JsonParser::BuildResponse(std::vector<dskInf> arg0)
@@ -115,7 +165,7 @@ void JsonParser::BuildResponse(CHAR cpuUsage)
 
 json JsonParser::GetJsonObject()
 {
-	std::cout << pObject.dump();
+	std::cout << pObject.dump() << std::endl;
 	return pObject;
 }
 
@@ -124,34 +174,52 @@ std::string JsonParser::GetResponse()
 {	
 	JsonParser jParser;
 
-	if (reportCpu)
+	if (passAuth != localAuthPass)
 	{
-		Cpu cpu;
-		jParser.BuildResponse(cpu.cpuusage());
+		jParser.BuildAuthFail(false);
 	}
 
-	if (reportProcs)
-	{
-		Process procs;
-		procs.Enumerate();		
-		jParser.BuildResponse(procs.GetProcs(0x1));
-	}
+		else
+		{
 
-	if (reportMem)
-	{
-		Memory mem;
-		MEMORYSTATUSEX  memGlobal = mem.GetMemGlobal();
-		jParser.BuildResponse(memGlobal);
-	}
+			jParser.BuildAuthFail(true);
 
-	if (reportDisk)
-	{		
-		Disk disk;
-		disk.CalcUsage(ALL_DEVICES);
-		std::vector<dskInf> dskUsage = disk.GetDiskInfo();
-		jParser.BuildResponse(dskUsage);
+			if (reportCpu)
+			{
+				Cpu cpu;
+				jParser.BuildResponse(cpu.cpuusage());
+			}
 
-	}
+			if (reportProcs)
+			{
+				Process procs;
+				procs.Openeables();
+				std::vector<PROCESSENTRY32> allProcs = procs.GetProcs(0x2);
+
+				Memory mem;
+				std::multimap<std::pair<std::string, DWORD>, DWORD> procMemUsage;
+				procMemUsage = mem.GetTopUsage(allProcs, 0x4);
+				jParser.BuildResponse(procMemUsage);
+			}
+
+			if (reportMem)
+			{
+				Memory mem;
+				MEMORYSTATUSEX  memGlobal = mem.GetMemGlobal();
+				jParser.BuildResponse(memGlobal);
+			}
+
+			if (reportDisk)
+			{
+				Disk disk;
+				disk.CalcUsage(ALL_DEVICES);
+				std::vector<dskInf> dskUsage = disk.GetDiskInfo();
+				jParser.BuildResponse(dskUsage);
+
+			}
+
+		}
+
 
 	json jObj = jParser.GetJsonObject();
 	std::string ret = jObj.dump();

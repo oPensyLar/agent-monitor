@@ -11,8 +11,12 @@ namespace kn = kissnet;
 class Socket
 {
 
+private:
+	JsonParser cfg;
+
 public:
 	int DeployServer(std::string ipAddr, int port);
+	void SetCfg(JsonParser jCfg);
 
 };
 

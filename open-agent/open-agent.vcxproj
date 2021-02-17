@@ -157,8 +157,8 @@
     <ClCompile Include="Memory.cpp" />
     <ClCompile Include="open-agent.cpp" />
     <ClCompile Include="Process.cpp" />
-    <ClCompile Include="Protocol.cpp" />
     <ClCompile Include="Socket.cpp" />
+    <ClCompile Include="Util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Cpu.h" />
@@ -166,8 +166,8 @@
     <ClInclude Include="JsonParser.h" />
     <ClInclude Include="Memory.h" />
     <ClInclude Include="Process.h" />
-    <ClInclude Include="Protocol.h" />
     <ClInclude Include="Socket.h" />
+    <ClInclude Include="Util.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

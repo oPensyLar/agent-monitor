@@ -9,12 +9,13 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include "Util.h"
 
-class Memory
+class Memory : Util
 {
 
 private:
-	std::map<DWORD, DWORD> vecMemByProcs;
+	std::map<DWORD, DWORD> pairMemPid;
 
 public:
 	// Getters
@@ -22,7 +23,7 @@ public:
 	MEMORYSTATUSEX GetMemGlobal();
 	int GetMemProcess(HANDLE hProc, PROCESS_MEMORY_COUNTERS_EX* pmc);
 	int GetUsage(int flag);
-	void GetTopUsage(std::vector<PROCESSENTRY32> openeables, int limit);
+	std::map<DWORD, DWORD> GetPair(int flag);
+	std::multimap<std::pair<std::string, DWORD>, DWORD> GetTopUsage(std::vector<PROCESSENTRY32> openeables, int limit);
 	
 };
-

@@ -26,7 +26,9 @@ int Socket::DeployServer(std::string ipAddr, int port)
 		if (data_size < recvPayload.size())
 			recvPayload[data_size] = std::byte{ '\0' };			
 
+		jParser.SetAuthPass(cfg.GetPwdAtuh());
 		jParser.ParserRequest(recvPayload);
+
 		std::string respStr = jParser.GetResponse();
 		client.send(reinterpret_cast<const std::byte*>(respStr.c_str()), respStr.size());
 
@@ -36,4 +38,10 @@ int Socket::DeployServer(std::string ipAddr, int port)
 	}
 
 	return 0;
+}
+
+
+void Socket::SetCfg(JsonParser jCfg)
+{
+	cfg = jCfg;
 }
